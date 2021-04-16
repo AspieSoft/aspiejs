@@ -1,0 +1,21 @@
+{
+  "name": "aspiejs",
+  "version": "0.0.1",
+  "description": "A modified script that compiles to JavaScript.",
+  "main": "index.js",
+  "author": "AspieSoft",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/aspiesoft/aspiejs.git"
+  },
+  "keywords": [
+    "js",
+    "javascript",
+    "aspiejs",
+    "script"
+  ],
+  "optionalDependencies": {
+    "terser": "^5.6.1"
+  }
+}
