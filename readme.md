@@ -16,10 +16,17 @@ This project is still in beta, and is mostly the same as JavaScript.
 This purpose of this module is to add some additional syntax to JavaScript.
 This may be updated with new features added in the future.
 
+## Whats New
+
+- added import and export key words (similar to typescript syntax)
+
 ## Installation
 
 ```shell script
 npm install @aspiesoft/aspiejs
+
+# install without terser (optional)
+npm install --no-optional @aspiesoft/aspiejs
 ```
 
 ## Setup

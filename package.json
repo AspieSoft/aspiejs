@@ -1,6 +1,6 @@
 {
   "name": "@aspiesoft/aspiejs",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "A modified script that compiles to JavaScript.",
   "main": "index.js",
   "author": "AspieSoft",

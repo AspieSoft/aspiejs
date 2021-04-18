@@ -16,7 +16,7 @@ const minify = (function(){
 
 const jsReserved = [
   'abstract','arguments','await','boolean','break','byte','case','catch','char','class','const','continue','debugger','default','delete','do','double','else','enum','eval','export','extends','false','final','finally','float','for','function','goto','if','implements','import','in','instanceof','int','interface','let','long','native','new','null','package','private','protected','public','return','short','static','super','switch','synchronized','this','throw','throws','transient','true','try','typeof','var','void','volatile','while','with','yield',
-  'log',
+  'log', 'imports', 'exports',
 ];
 
 const customRegexShortcuts = {
@@ -176,6 +176,42 @@ function compileScript(script){
 
   // compile log to console.log
   script = script.replace(/⸨log⸩\s*(«obj:1:([0-9]+:\w+)».*?«\/obj:1:\2»|[\w_\-.]+)/g, 'console.log($1)');
+
+  // compile imports
+  script = script.replace(/⸨imports?⸩(\s+optional|\*?\?|)\s+(«str:([1-3]:[0-9]+)»|[\w_\-.]+)(?:\s+(from|as)\s+(«str:[1-3]:[0-9]+»|[\w_\-.]+)|)(\s+optional|\*?\?|)/gs, function(str, opt, var1, str1, type, var2, opt2){
+    if((opt && opt !== '') || (opt2 && opt2 !== '')){
+      opt = true;
+    }
+
+    if(opt && type === 'from'){
+      return `${var1}=(()=>{try{return require(${var2})}catch(e){return undefined}})()`;
+    }else if(opt && type === 'as'){
+      return `${var2}=(()=>{try{return require(${var1})}catch(e){return undefined}})()`;
+    }else if(opt){
+      if(str1 && str1 !== ''){
+        str1 = str1.split(':').map(s => Number(s));
+        let v = strings[str1[0]-1][str1[1]-1].split(/[\/\\]/g);
+        v = v[v.length-1].replace(/^(.*?)\..*$/, '$1').replace(/[^\w_]/g, '');
+        return `${v}=(()=>{try{return require(${var1})}catch(e){return undefined}})()`;
+      };
+      return `${var1}=(()=>{try{return require(\'${var1.replace(/\\?'/g, '\\\'')}\')}catch(e){return undefined}})()`;
+    }else if(type === 'from'){
+      return `${var1}=require(${var2})`;
+    }else if(type === 'as'){
+      return `${var2}=require(${var1})`;
+    }else{
+      if(str1 && str1 !== ''){
+        str1 = str1.split(':').map(s => Number(s));
+        let v = strings[str1[0]-1][str1[1]-1].split(/[\/\\]/g);
+        v = v[v.length-1].replace(/^(.*?)\..*$/, '$1').replace(/[^\w_]/g, '');
+        return `${v}=require(${var1})`;
+      };
+      return `${var1}=require(\'${var1.replace(/\\?'/g, '\\\'')}\')`;
+    }
+  });
+
+  // compile exports
+  script = script.replace(/([^\w_\-.])⸨exports?⸩\s+/gs, '$1module.exports=');
 
 
   // decode objects
