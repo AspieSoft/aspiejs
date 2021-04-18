@@ -74,8 +74,8 @@ let n = 4 \ 2
 n \= 5 // 5th root (n = Math.pow(n, 1/5))
 
 // absolute value (Math.abs)
-|2 - 8| // output: 8
-2 - 8 // output: -8
+|2 - 10| // output: 8
+2 - 10 // output: -8
 
 let circumference = pi // => let circumference = Math.PI
 
