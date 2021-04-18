@@ -1,6 +1,6 @@
 {
   "name": "aspiejs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A modified script that compiles to JavaScript.",
   "main": "index.js",
   "author": "AspieSoft",
@@ -13,7 +13,9 @@
     "js",
     "javascript",
     "aspiejs",
-    "script"
+    "script",
+    "aspie",
+    "aspie-js"
   ],
   "optionalDependencies": {
     "terser": "^5.6.1"
