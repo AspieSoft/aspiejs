@@ -112,9 +112,19 @@ function compileScript(script){
   });
 
 
+  // compile if statements
+  script = script.replace(/([?!])\s*(«obj:1:([0-9]+:\w+)»)(.*?)(«\/obj:1:\3»)/gs, (_, type, open, _1, logic, close) => {
+    if(type === '!'){
+      return `⸨if⸩${open}!${logic}${close}`;
+    }
+    return `⸨if⸩${open}${logic}${close}`;
+  }).replace(/(«\/obj:2:[0-9]+:\w+»)[ \t]*⸨if⸩[ \t]*(«obj:1:[0-9]+:\w+»)/g, '$1⸨else⸩ ⸨if⸩$2')
+  .replace(/(«\/obj:2:[0-9]+:\w+»)[ \t]*(«obj:2:[0-9]+:\w+»)/g, '$1else$2');
+
+
   // compile functions
   function compFunc(script){
-    return script.replace(/(function\s+|)(⸨?[\w_]*⸩?)\s*«obj:1:([0-9]+:\w+)»(.*?)«\/obj:1:\3»\s*«obj:2:([0-9]+:\w+)»(.*?)«\/obj:2:\5»[ \t]*(«obj:1:([0-9]+:\w+)».*?«\/obj:1:\8»|)/gs, function(str, func, name, o1, attrs, o2, content, run){
+    return script.replace(/((?:⸨?function⸩?|fn|func)\s+|)(⸨?[\w_]*⸩?)\s*«obj:1:([0-9]+:\w+)»(.*?)«\/obj:1:\3»\s*«obj:2:([0-9]+:\w+)»(.*?)«\/obj:2:\5»[ \t]*(«obj:1:([0-9]+:\w+)».*?«\/obj:1:\8»|)/gs, function(str, func, name, o1, attrs, o2, content, run){
       if(name.startsWith('⸨') || name.endsWith('⸩')){
         return str;
       }
@@ -138,13 +148,13 @@ function compileScript(script){
   script = compFunc(script);
 
   // compile regex
-  script.replace(/«str:4:([0-9]+)»/g, function(str, index){
-    strings[3][Number(index)-1] = strings[3][Number(index)-1].replace(/(\\+)(.)/gs, function(str, b, c){
+  script.replace(/«str:4:([0-9]+)»/g, (str, index) => {
+    strings[3][Number(index)-1] = strings[3][Number(index)-1].replace(/(\\+)(.)/gs, (str, b, c) => {
       if(b.length % 2 === 0 || !customRegexShortcuts[c]){
         return str;
       }
       return '\\'.repeat(b.length-1)+customRegexShortcuts[c];
-    });
+    }).replace(/\(\?#.*?\)/gs, '');
   });
 
   // compile math
@@ -171,11 +181,57 @@ function compileScript(script){
   script = script.replace(/\|\s*(«obj:1:([0-9]+:\w+)».*?«\/obj:1:\2»|[\w_\-.]+)\s*\|/g, 'Math.abs($1)');
   script = script.replace(/([^\w_\-.])pi([^\w_\-.])/g, '$1Math.PI$2');
 
+  // enforce triple equal
+  script = script.replace(/([=!])==?/g, '$1==');
+
   // compile typeof
   script = script.replace(/⸨typeof⸩\s*(«obj:1:([0-9]+:\w+)».*?«\/obj:1:\2»|[\w_\-.]+)/g, '(((($1)===null)?\'null\':(Array.isArray($1)?\'array\':((($1)instanceof(RegExp))?\'regex\':undefined)))||typeof($1))');
 
   // compile log to console.log
-  script = script.replace(/⸨log⸩\s*(«obj:1:([0-9]+:\w+)».*?«\/obj:1:\2»|[\w_\-.]+)/g, 'console.log($1)');
+  script = script.replace(/⸨log⸩\s*(«obj:1:([0-9]+:\w+)»)(.*?)(«\/obj:1:\2»)/gs, (_, open, _1, str, close) => {
+    str.replace(/«str:([1-3]):([0-9]+)»/g, (_, i, index) => {
+      strings[Number(i)-1][Number(index)-1] = strings[Number(i)-1][Number(index)-1].replace(/\[(black|red|green|yellow|blue|magenta|purple|cyan|white)\]/g, (_, color) => {
+        switch(color){
+          case 'black':
+            return '\\x1b[30m';
+          case 'red':
+            return '\\x1b[31m';
+          case 'green':
+            return '\\x1b[32m';
+          case 'yellow':
+            return '\\x1b[33m';
+          case 'blue':
+            return '\\x1b[34m';
+          case 'magenta':
+          case 'purple':
+            return '\\x1b[35m';
+          case 'cyan':
+            return '\\x1b[36m';
+          case 'white':
+            return '\\x1b[37m';
+          default:
+            return '\\x1b[0m';
+        }
+      });
+    });
+
+    let i = strings[0].indexOf('\\x1b[0m');
+    if(i === -1){
+      i = strings[0].push('\\x1b[0m');
+    }
+
+    return `console.log${open}${str},«str:1:${i}»${close}`;
+  });
+  script = script.replace(/>_\s*(.*?)(?=;|$)/gm, 'console.log($1)');
+
+  // compile function returns
+  script = script.replace(/>>\s*/g, 'return ');
+  script = script.replace(/&>\s*/g, 'break ');
+  script = script.replace(/\|>\s*/g, 'continue ');
+  
+  // compile boolean replacements
+  script = script.replace(/\?0/g, '⸨false⸩');
+  script = script.replace(/\?1/g, '⸨true⸩');
 
   // compile imports
   script = script.replace(/⸨imports?⸩(\s+optional|\*?\?|)\s+(«str:([1-3]:[0-9]+)»|[\w_\-.]+)(?:\s+(from|as)\s+(«str:[1-3]:[0-9]+»|[\w_\-.]+)|)(\s+optional|\*?\?|)/gs, function(str, opt, var1, str1, type, var2, opt2){
